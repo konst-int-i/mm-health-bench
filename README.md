@@ -14,6 +14,15 @@ mamba env update -f environment.yml
 conda activate bench
 ```
 
+### Git LFS
+
+Some smaller preprocessed files are temporarily stored using large file storage (`git-lfs`). 
+```
+brew install git-lfs
+git lfs install
+git lfs pull
+```
+
 ## Modality shapes
 
 The dataloaders all return data of the following shapes

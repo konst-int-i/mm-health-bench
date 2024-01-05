@@ -1,4 +1,4 @@
-name: bench
+name: mm-bench
 channels:
   - anaconda
   - conda-forge
@@ -18,4 +18,3 @@ dependencies:
   - pip:
       - h5py
       - invoke
-      - wandb==0.15.8
