@@ -1,0 +1,21 @@
+name: bench
+channels:
+  - anaconda
+  - conda-forge
+  - defaults
+  - pytorch
+dependencies:
+  - einops
+  - jupyter
+  - python=3.9
+  - pytorch=1.13.1=cuda112py39hb0b7ed5_200
+  - pandas=1.5.3
+  - scikit-learn
+  - torchvision=0.14.1=cuda112py39h1a1de93_0
+  - tqdm
+  - python-box
+  - pip
+  - pip:
+      - h5py
+      - invoke
+      - wandb==0.15.8

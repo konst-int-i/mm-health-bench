@@ -11,7 +11,7 @@ We recommend downloading [mamba](https://github.com/mamba-org/mamba) or micromam
 
 ```
 mamba env update -f environment.yml
-conda activate cognition
+conda activate bench
 ```
 
 
@@ -25,4 +25,3 @@ Pathology:
 
 Radiology: 
 
-tbd
