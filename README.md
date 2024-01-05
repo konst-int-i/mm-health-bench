@@ -14,6 +14,23 @@ mamba env update -f environment.yml
 conda activate bench
 ```
 
+## Modality shapes
+
+The dataloaders all return data of the following shapes
+
+* Image: `(n h w c)`
+* Image (patched): `(n p d)` # p is the number of patches, d is the flattened patch size
+* Tabular: `(n d)`
+* Sequences: `(n s)` # s is the number of tokens in the sequence
+
+
+We offer the option to pass in `expan=True` to the multimodal dataloaders which will introduce "empty" channels if 
+if you want the tensor shapes to be consistent. This will be matched to the shape of the highest-dimensional modality. 
+
+* Image: `(n h w c)`
+* Image (patched): `(n 1 p d)`
+* Tabular: `(n 1 1 d)`
+* Sequences: `(n 1 1 s)`
 
 ## Datasets supported
 
