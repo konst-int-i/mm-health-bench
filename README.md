@@ -1,27 +1,9 @@
 # Multi-modal health benchmarks
 Easy access of various multi-modal healthcare datasets for Machine Learning pipelines. 
 
-## Setup 
+## Quickstart
 
-Install or update the conda environment using and then activate
-
-### Conda/Mamba
-
-We recommend downloading [mamba](https://github.com/mamba-org/mamba) or micromamba for faster environment management. 
-
-```
-mamba env update -f environment.yml
-conda activate bench
-```
-
-### Git LFS
-
-Some smaller preprocessed files are temporarily stored using large file storage (`git-lfs`). 
-```
-brew install git-lfs
-git lfs install
-git lfs pull
-```
+tbd
 
 ## Modality shapes
 
@@ -51,3 +33,25 @@ Pathology:
 
 Radiology: 
 
+
+## Setup 
+
+Install or update the conda environment using and then activate
+
+### Conda/Mamba
+
+We recommend downloading [mamba](https://github.com/mamba-org/mamba) or micromamba for faster environment management. 
+
+```
+mamba env update -f environment.yml
+conda activate bench
+```
+
+### Git LFS
+
+Some smaller preprocessed files are temporarily stored using large file storage (`git-lfs`). 
+```
+brew install git-lfs
+git lfs install
+git lfs pull
+```
