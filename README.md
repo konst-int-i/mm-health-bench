@@ -67,3 +67,9 @@ brew install git-lfs
 git lfs install
 git lfs pull
 ```
+
+### Running test
+
+```bash
+pytest tests/
+```

@@ -35,12 +35,17 @@ class MMDataset(Dataset):
     def num_modalities(self):
         return len(self.tensors)
 
+    @property
+    def has_target(self):
+        return False if self.target is None else True
+
 
 if __name__ == "__main__":
     dataset = MMDataset(
-        [torch.randn(10, 3, 224, 224), torch.randn(10, 3, 224, 224)],
-        torch.randint(0, 10, (10,)),
+        tensors=[torch.randn(10, 3, 224, 224), torch.randn(10, 3, 224, 224)],
+        target=torch.randint(0, 10, (10,)),
     )
     print(dataset[0])
     print(len(dataset))
     print(dataset.num_modalities)
+    print(dataset.has_target)

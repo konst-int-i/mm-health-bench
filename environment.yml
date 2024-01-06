@@ -7,9 +7,10 @@ channels:
 dependencies:
   - einops
   - jupyter
+  - pandas=1.5.3
+  - pytest
   - python=3.9
   - pytorch=1.13.1=cuda112py39hb0b7ed5_200
-  - pandas=1.5.3
   - scikit-learn
   - torchvision=0.14.1=cuda112py39h1a1de93_0
   - tqdm
