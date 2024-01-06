@@ -21,7 +21,7 @@ class MMDataset(Dataset):
         self.target = target
 
     def __getitem__(
-        self, idx
+        self, idx: int
     ) -> [Tuple[List[torch.Tensor], torch.Tensor], List[torch.Tensor]]:
         if self.target is None:
             return [t[idx] for t in self.tensors]
