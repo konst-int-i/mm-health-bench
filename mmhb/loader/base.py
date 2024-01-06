@@ -1,9 +1,27 @@
 from torch.utils.data import Dataset
 from typing import List, Tuple, Optional
 import torch
+from abc import ABC, abstractmethod
 
 
 class MMDataset(Dataset):
+    def __init__(self):
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    @abstractmethod
+    def __len__(self):
+        pass
+
+    @property
+    def num_modalities(self):
+        pass
+
+    @property
+    def has_target(self):
+        pass
+
+
+class SampleMMDataset(MMDataset):
     """
     Generic torch dataset object for supervised multi-modal data.
     """
@@ -41,11 +59,4 @@ class MMDataset(Dataset):
 
 
 if __name__ == "__main__":
-    dataset = MMDataset(
-        tensors=[torch.randn(10, 3, 224, 224), torch.randn(10, 3, 224, 224)],
-        target=torch.randint(0, 10, (10,)),
-    )
-    print(dataset[0])
-    print(len(dataset))
-    print(dataset.num_modalities)
-    print(dataset.has_target)
+    pass

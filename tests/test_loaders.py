@@ -1,18 +1,17 @@
 import pytest
 import einops
 import torch
-from mmhb.loader import MMDataset
+from mmhb.loader import SampleMMDataset
 
 
-# @pytest.fixture(autouse=True)
 def test_base_loader():
     n = 10
-    dataset = MMDataset(
+    dataset = SampleMMDataset(
         tensors=[torch.randn(n, 3, 224, 224), torch.randn(n, 3, 224, 224)],
         target=torch.randint(0, 100, (n,)),
     )
 
-    ssl_dataset = MMDataset(
+    ssl_dataset = SampleMMDataset(
         tensors=[
             torch.randn(n, 3, 224, 224),
             torch.randn(n, 3, 224, 224),

@@ -1,3 +1,3 @@
-from mmhb.loader.base import MMDataset
+from mmhb.loader.base import SampleMMDataset, MMDataset
 
-__all__ = ["MMDataset"]
+__all__ = ["SampleMMDataset", "MMDataset"]
