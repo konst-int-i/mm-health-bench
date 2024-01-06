@@ -1,6 +1,9 @@
 # Multi-modal health benchmarks
 Easy access of various multi-modal healthcare datasets for Machine Learning pipelines. 
 
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
+
 ## Quickstart
 
 tbd
@@ -46,6 +49,15 @@ We recommend downloading [mamba](https://github.com/mamba-org/mamba) or micromam
 mamba env update -f environment.yml
 conda activate bench
 ```
+
+### Pre-commit hooks
+
+We use `black` as a code formatting standard. To use, run: 
+
+```bash
+pre-commit install
+```
+
 
 ### Git LFS
 

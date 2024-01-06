@@ -18,3 +18,4 @@ dependencies:
   - pip:
       - h5py
       - invoke
+      - pre-commit
