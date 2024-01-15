@@ -40,5 +40,41 @@ def test_tcga():
 
 
 def test_tcga_survival():
-    data = TCGASurvivalDataset(config="config/config.yml", dataset="brca")
-    pass
+    n_patches = 1081  # number of image patches in first sample (data[0])
+    patch_dim = 2048
+    n_feats = 2914  # tabular features
+
+    # TEST CASE - smoke test regular dims, expand_dims=False
+    data = TCGASurvivalDataset(
+        config="config/config.yml",
+        dataset="brca",
+        expand_dims=False,
+        sources=["omic", "slides"],
+    )
+    assert data.num_modalities == 2
+    assert len(data) == 1019
+    tensors, censorship, event_time, target = data[0]
+    # check omic shape
+    assert tensors[0].shape == torch.Size([n_feats])
+    # check image shape
+    assert tensors[1].shape == torch.Size([n_patches, patch_dim])
+
+    # TEST CASE - expand_dims=True
+    data = TCGASurvivalDataset(
+        config="config/config.yml", dataset="brca", sources=["omic"], expand_dims=True
+    )
+    tensors, censorship, event_time, target = data[0]
+    assert tensors[0].shape == torch.Size([1, n_feats])
+
+    # TEST CASE - concatenated dims
+    data = TCGASurvivalDataset(
+        config="config/config.yml",
+        dataset="brca",
+        sources=["omic", "slides"],
+        expand_dims=False,
+        concat=True,
+    )
+    tensors, censorship, event_time, target = data[0]
+    assert len(tensors) == 1
+    # expected shape img(p * d) + tab(d)
+    assert tensors[0].shape == torch.Size([(n_patches * patch_dim) + n_feats])

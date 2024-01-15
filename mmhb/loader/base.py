@@ -56,8 +56,9 @@ class MMSampleDataset(MMDataset):
         config: Union[str, Path],
         tensors: List[torch.Tensor],
         target: torch.Tensor,
+        **kwargs,
     ):
-        super().__init__(config)
+        super().__init__(config, **kwargs)
         self.tensors = tensors
         self.target = target
 

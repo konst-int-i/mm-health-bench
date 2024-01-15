@@ -20,8 +20,9 @@ class TCGADataset(MMDataset):
         filter_overlap: bool = True,
         patch_wsi: bool = True,
         concat: bool = False,
+        **kwargs,
     ):
-        super().__init__(config)
+        super().__init__(config, **kwargs)
         self.prep_path = self.data_path.joinpath(
             f"wsi/{dataset}_preprocessed_level{level}"
         )  # preprocessed data path
@@ -150,8 +151,11 @@ class TCGASurvivalDataset(TCGADataset):
         filter_overlap: bool = True,
         patch_wsi: bool = True,
         n_bins: int = 4,
+        **kwargs,
     ):
-        super().__init__(config, dataset, sources, level, filter_overlap, patch_wsi)
+        super().__init__(
+            config, dataset, sources, level, filter_overlap, patch_wsi, **kwargs
+        )
         self.n_bins = n_bins
 
         # calculate survival
@@ -204,7 +208,10 @@ if __name__ == "__main__":
     # tensors = data[0]
     # for tensor in tensors:
     #     print(tensor.shape)
-    data = TCGASurvivalDataset(config="config/config.yml", dataset="brca")
+    data = TCGASurvivalDataset(
+        config="config/config.yml", dataset="brca", expand_dims=True
+    )
     tensors, censorship, event_time, target = data[0]
-    print(torch.unique(data.target, return_counts=True))
     print(tensors)
+    # print(torch.unique(data.target, return_counts=True))
+    # print(tensors)
