@@ -16,16 +16,17 @@ class MMDataset(Dataset):
     def __init__(
         self,
         config: Union[str, Path],
+        expand_dims: bool = True,
     ):
         """
         Args:
-            tensors(List[torch.Tensor]): modalities for each sample, note that the first dim of each tensor is
-                the sample dim
-            target(torch.Tensor): label for each sample, optional to allow SSL datasets
+            config (Union[str, Path]): path to config file
+            expand_dims (bool, optional): whether to expand dimensions across tensors with mismatching dims
         """
         if type(config) is str:
             config = Path(config)
         self.config = Config(config).read()
+        self.expand_dims = expand_dims
         self.data_path = Path(self.config.data_path)
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         logger.debug(f"Using device: {self.device}")

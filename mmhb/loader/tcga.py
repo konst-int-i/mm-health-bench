@@ -1,5 +1,5 @@
 import pandas as pd
-
+import einops
 from mmhb.loader import MMDataset
 from mmhb.utils import setup_logging, RepeatTransform, RearrangeTransform
 import torch
@@ -19,6 +19,7 @@ class TCGADataset(MMDataset):
         level: int = 2,
         filter_overlap: bool = True,
         patch_wsi: bool = True,
+        concat: bool = False,
     ):
         super().__init__(config)
         self.prep_path = self.data_path.joinpath(
@@ -29,6 +30,7 @@ class TCGADataset(MMDataset):
         self.sources = sources
         self.filter_overlap = filter_overlap
         self.patch_wsi = patch_wsi
+        self.concat = concat  # whether to flatten tensor for early fusion
         self._check_args()
 
         # pre-fetch data
@@ -53,6 +55,15 @@ class TCGADataset(MMDataset):
             tensors.append(self.omic_tensor[idx])
         if "slides" in self.sources:
             tensors.append(self.load_patches(slide_id=self.slide_ids[idx]))
+
+        if self.concat:
+            tensors = torch.cat([torch.flatten(t) for t in tensors], dim=0)
+            if self.expand_dims:
+                # expand again for healnet
+                tensors = tensors.unsqueeze(0)
+            # return as list (even if concatenated)
+            tensors = [tensors]
+        assert isinstance(tensors, list), "tensors must be a list"
 
         return tensors
 
@@ -130,12 +141,70 @@ class TCGASurvivalDataset(TCGADataset):
     Task-specific dataset
     """
 
-    pass
+    def __init__(
+        self,
+        config: Union[str, Path],
+        dataset: str,
+        sources: List = ["omic", "slides"],
+        level: int = 2,
+        filter_overlap: bool = True,
+        patch_wsi: bool = True,
+        n_bins: int = 4,
+    ):
+        super().__init__(config, dataset, sources, level, filter_overlap, patch_wsi)
+        self.n_bins = n_bins
+
+        # calculate survival
+        self.omic_df = self._calc_survival()
+        # drop vars to avoid leakage
+        self.features = self.omic_df.drop(
+            ["censorship", "survival_months", "y_disc"], axis=1
+        )
+
+        self.omic_tensor = torch.Tensor(self.features.values)
+
+        if self.expand_dims:
+            self.omic_tensor = einops.repeat(
+                self.omic_tensor, pattern="n d -> n c d", c=1
+            )  # add empty channel
+        self.censorship = self.omic_df["censorship"]
+        self.event_time = self.omic_df["survival_months"]
+        self.target = torch.Tensor(self.omic_df["y_disc"].values)
+
+    def __getitem__(self, idx: int):
+        # get list of tensors
+        tensors = super().__getitem__(idx)
+        return tensors, self.censorship[idx], self.event_time[idx], self.target[idx]
+
+    def _calc_survival(self, eps: float = 1e-6):
+        survival = "survival_months"
+        df = self.omic_df
+
+        # take q_bins from uncensored patients
+        subset_df = df[df["censorship"] == 0]
+        disc_labels, q_bins = pd.qcut(
+            subset_df[survival], q=self.n_bins, retbins=True, labels=False
+        )
+        q_bins[-1] = df[survival].max() + eps
+        q_bins[0] = df[survival].min() - eps
+        df["y_disc"] = pd.cut(
+            df[survival],
+            bins=q_bins,
+            retbins=False,
+            labels=False,
+            right=False,
+            include_lowest=True,
+        ).values
+        return df
 
 
 if __name__ == "__main__":
-    data = TCGADataset(config="config/config.yml", dataset="brca")
-
-    tensors = data[0]
-    for tensor in tensors:
-        print(tensor.shape)
+    # data = TCGADataset(config="config/config.yml", dataset="brca")
+    #
+    # tensors = data[0]
+    # for tensor in tensors:
+    #     print(tensor.shape)
+    data = TCGASurvivalDataset(config="config/config.yml", dataset="brca")
+    tensors, censorship, event_time, target = data[0]
+    print(torch.unique(data.target, return_counts=True))
+    print(tensors)
