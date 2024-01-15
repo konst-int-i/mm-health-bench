@@ -20,10 +20,11 @@ class MMDataset(Dataset):
                 the sample dim
             target(torch.Tensor): label for each sample, optional to allow SSL datasets
         """
+        self._check_args()
         if type(config) is str:
             config = Path(config)
         self.config = Config(config).read()
-        self.path = self.config.data_path
+        self.data_path = Path(self.config.data_path)
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         logger.debug(f"Using device: {self.device}")
         self.tensors = None
@@ -36,6 +37,9 @@ class MMDataset(Dataset):
     def __len__(self):
         return 0 if self.tensors is None else self.tensors[0].size()[0]
 
+    def _check_args(self, config):
+        pass
+
     @property
     def num_modalities(self):
         return 0 if self.tensors is None else len(self.tensors)
@@ -46,8 +50,6 @@ class MMSampleDataset(MMDataset):
         self.tensors = tensors
         self.target = target
 
-
-
 if __name__ == "__main__":
 
     pass
@@ -55,4 +57,3 @@ if __name__ == "__main__":
     # print(dataset[0])
     # print(len(dataset))
     # print(dataset.num_modalities)
-

@@ -32,7 +32,11 @@ def test_sample_dataset():
 
 
 def test_tcga():
-    data = TCGADataset(config="config/config.yml")
+    data = TCGADataset(config="config/config.yml",
+                       sources=["omic", "slides"])
+    assert len(data) == 1019
+    tensors = data[0]
+    assert len(tensors) == 2
     pass
 
 def test_tcga_survival():
