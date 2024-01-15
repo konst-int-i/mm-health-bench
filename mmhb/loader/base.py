@@ -1,8 +1,11 @@
 from torch.utils.data import Dataset
 from typing import List, Tuple, Optional, Union
-from mmhb.utils import Config
+from mmhb.utils import Config, setup_logging
+import logging
 from pathlib import Path
 import torch
+
+logger = setup_logging()
 
 class MMDataset(Dataset):
     """
@@ -21,6 +24,8 @@ class MMDataset(Dataset):
             config = Path(config)
         self.config = Config(config).read()
         self.path = self.config.data_path
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        logger.debug(f"Using device: {self.device}")
         self.tensors = None
         self.target = None
 

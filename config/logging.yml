@@ -1,0 +1,49 @@
+level: debug # ['info', 'debug']
+format: "[%(asctime)s][%(levelname)s][%(filename)s][%(module)s.%(funcName)s:%(lineno)d] %(message)s"
+#
+#formatters:
+#  console:
+#      format: "[%(asctime)s][%(levelname)s][%(filename)s][%(module)s.%(funcName)s:%(lineno)d] %(message)s"
+#  file:
+#      format: "[%(asctime)s][%(levelname)s] %(message)s"
+#  network:
+#      format: "[sampleProject][%(levelname)s] %(message)s"
+#
+#handlers:
+#    console:
+#        class: next.utils.color_logger.ColorHandler
+#        level: INFO
+#        formatter: console
+#        stream: ext://sys.stdout
+#        colors:
+#          debug: magenta
+#          info: cyan
+#          warning: yellow
+#          error: red
+#          critical: red
+#
+#    file_handler:
+#        class: logging.handlers.RotatingFileHandler
+#        level: INFO
+#        formatter: file
+#        filename: ./output.log
+#        maxBytes: 10485760 # 10MB
+#        backupCount: 20
+#        encoding: utf8
+#
+#  #   network_handler:
+#  #     class: logging.handlers.SysLogHandler
+#  #     level: DEBUG
+#  #     formatter: network
+#  #     address: localhost
+#
+#  #  windows_handler:
+#  #    class: logging.handlers.NTEventLogHandler
+#  #    level: DEBUG
+#  #    appname: sampleProject
+#  #    logtype: 'Application'
+#
+#root:
+#    level: INFO
+#    handlers: [console, file_handler]
+#    propogate: yes

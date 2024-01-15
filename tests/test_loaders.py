@@ -29,3 +29,13 @@ def test_sample_dataset():
 
     assert len(data) == n
     assert data.num_modalities == 3
+
+
+def test_tcga():
+    data = TCGADataset(config="config/config.yml")
+    pass
+
+def test_tcga_survival():
+    data = TCGASurvivalDataset(config="config/config.yml",
+                               dataset="brca")
+    pass
