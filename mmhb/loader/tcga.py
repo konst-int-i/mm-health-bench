@@ -24,7 +24,7 @@ class TCGADataset(MMDataset):
     ):
         super().__init__(config, **kwargs)
         self.prep_path = self.data_path.joinpath(
-            f"wsi/{dataset}_preprocessed_level{level}"
+            f"tcga/wsi/{dataset}_preprocessed_level{level}"
         )  # preprocessed data path
         self.dataset = dataset
         self.level = level
@@ -77,7 +77,7 @@ class TCGADataset(MMDataset):
 
     def load_omic(self) -> pd.DataFrame:
         load_path = self.data_path.joinpath(
-            f"omic/tcga_{self.dataset}_all_clean.csv.zip"
+            f"tcga/omic/tcga_{self.dataset}_all_clean.csv.zip"
         )
         df = pd.read_csv(
             load_path, compression="zip", header=0, index_col=0, low_memory=False
