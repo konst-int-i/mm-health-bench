@@ -5,6 +5,7 @@ channels:
   - defaults
   - pytorch
 dependencies:
+  - colorlog
   - einops
   - jupyter
   - pandas=1.5.3
