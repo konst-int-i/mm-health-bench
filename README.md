@@ -1,6 +1,9 @@
 # Multi-modal health benchmarks
 Easy access of various multi-modal healthcare datasets for Machine Learning pipelines. 
 
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
+
 ## Quickstart
 
 tbd
@@ -47,6 +50,15 @@ mamba env update -f environment.yml
 conda activate bench
 ```
 
+### Pre-commit hooks
+
+We use `black` as a code formatting standard. To use, run: 
+
+```bash
+pre-commit install
+```
+
+
 ### Git LFS
 
 Some smaller preprocessed files are temporarily stored using large file storage (`git-lfs`). 
@@ -54,4 +66,10 @@ Some smaller preprocessed files are temporarily stored using large file storage 
 brew install git-lfs
 git lfs install
 git lfs pull
+```
+
+### Running test
+
+```bash
+pytest tests/
 ```
