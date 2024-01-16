@@ -187,7 +187,9 @@ class TCGASurvivalDataset(TCGADataset):
             )  # add empty channel
         self.censorship = self.omic_df["censorship"]
         self.event_time = self.omic_df["survival_months"]
-        self.target = torch.Tensor(self.omic_df["y_disc"].values)
+        self.target = torch.Tensor(
+            self.omic_df["y_disc"].values
+        )  # y_disc (discretised survival bins)
 
     def __getitem__(self, idx: int):
         # get list of tensors
