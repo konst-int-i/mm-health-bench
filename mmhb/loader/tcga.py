@@ -121,7 +121,9 @@ class TCGADataset(MMDataset):
         """
         load_path = self.prep_path.joinpath(f"patch_features/{slide_id}.pt")
         with open(load_path, "rb") as file:
-            patch_features = torch.load(file, weights_only=True)
+            patch_features = torch.load(
+                file, weights_only=True, map_location=torch.device("cpu")
+            )
         return patch_features
 
     def _filter_overlap(self, df: pd.DataFrame):
@@ -148,6 +150,9 @@ class TCGADataset(MMDataset):
             # self.slide_ids = overlap
         else:
             logger.info("100% modality overlap, no samples filtered out")
+
+        # reset index
+        df = df.reset_index(drop=True)
         return df
 
 
@@ -189,7 +194,7 @@ class TCGASurvivalDataset(TCGADataset):
         self.event_time = self.omic_df["survival_months"]
         self.target = torch.Tensor(
             self.omic_df["y_disc"].values
-        )  # y_disc (discretised survival bins)
+        ).long()  # cast as int64 since sksurv requires this for c-index
 
     def __getitem__(self, idx: int):
         # get list of tensors
