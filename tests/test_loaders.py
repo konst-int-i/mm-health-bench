@@ -1,10 +1,16 @@
 import torch
 import pytest
 from mmhb.loader import *
+from mmhb.utils import Config
 
 
-def test_base():
-    data = MMDataset(config="config/config.yml")
+@pytest.fixture(scope="module")
+def config():
+    return Config("config/config.yml").read()
+
+
+def test_base(config):
+    data = MMDataset(**config.to_dict())
 
     with pytest.raises(NotImplementedError):
         data[0]
@@ -12,7 +18,7 @@ def test_base():
     assert data.num_modalities == 0
 
 
-def test_sample_dataset():
+def test_sample_dataset(config):
     n = 500
     tab = torch.randn(n, 1, 50)
     img = torch.randn(n, 512, 512, 3)
@@ -23,30 +29,28 @@ def test_sample_dataset():
     # Generate list of tensors
     tensors = [tab, patch_img, seq]
 
-    data = MMSampleDataset(config="config/config.yml", tensors=tensors, target=target)
+    data = MMSampleDataset(**config.to_dict(), tensors=tensors, target=target)
 
     assert len(data) == n
     assert data.num_modalities == 3
 
 
-def test_tcga():
-    data = TCGADataset(
-        config="config/config.yml", dataset="brca", sources=["omic", "slides"]
-    )
+def test_tcga(config):
+    data = TCGADataset(**config.to_dict(), dataset="brca", sources=["omic", "slides"])
     assert len(data) == 1019
     tensors = data[0]
     assert len(tensors) == 2
     assert (data.num_modalities) == 2
 
 
-def test_tcga_survival():
+def test_tcga_survival(config):
     n_patches = 1081  # number of image patches in first sample (data[0])
     patch_dim = 2048
     n_feats = 2914  # tabular features
 
     # TEST CASE - smoke test regular dims, expand_dims=False
     data = TCGASurvivalDataset(
-        config="config/config.yml",
+        **config.to_dict(),
         dataset="brca",
         expand_dims=False,
         sources=["omic", "slides"],
@@ -61,14 +65,14 @@ def test_tcga_survival():
 
     # TEST CASE - expand_dims=True
     data = TCGASurvivalDataset(
-        config="config/config.yml", dataset="brca", sources=["omic"], expand_dims=True
+        **config.to_dict(), dataset="brca", sources=["omic"], expand_dims=True
     )
     tensors, censorship, event_time, target = data[0]
     assert tensors[0].shape == torch.Size([1, n_feats])
 
     # TEST CASE - concatenated dims
     data = TCGASurvivalDataset(
-        config="config/config.yml",
+        **config.to_dict(),
         dataset="brca",
         sources=["omic", "slides"],
         expand_dims=False,

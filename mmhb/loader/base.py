@@ -15,19 +15,17 @@ class MMDataset(Dataset):
 
     def __init__(
         self,
-        config: Union[str, Path],
+        # config: Union[str, Path],
+        data_path: Union[str, Path],
         expand_dims: bool = True,
     ):
         """
         Args:
-            config (Union[str, Path]): path to config file
+            data_path (Union[str, Path]): path to data source directory
             expand_dims (bool, optional): whether to expand dimensions across tensors with mismatching dims
         """
-        if type(config) is str:
-            config = Path(config)
-        self.config = Config(config).read()
         self.expand_dims = expand_dims
-        self.data_path = Path(self.config.data_path)
+        self.data_path = Path(data_path)
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         logger.debug(f"Using device: {self.device}")
         self.tensors = None
@@ -53,12 +51,13 @@ class MMDataset(Dataset):
 class MMSampleDataset(MMDataset):
     def __init__(
         self,
-        config: Union[str, Path],
+        # config: Union[str, Path],
+        data_path: Union[str, Path],
         tensors: List[torch.Tensor],
         target: torch.Tensor,
         **kwargs,
     ):
-        super().__init__(config, **kwargs)
+        super().__init__(data_path, **kwargs)
         self.tensors = tensors
         self.target = target
 

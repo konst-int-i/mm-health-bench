@@ -1,7 +1,7 @@
 import pandas as pd
 import einops
 from mmhb.loader import MMDataset
-from mmhb.utils import setup_logging, RepeatTransform, RearrangeTransform
+from mmhb.utils import setup_logging, RepeatTransform, RearrangeTransform, Config
 import torch
 import os
 from typing import Union, List, Tuple
@@ -13,7 +13,7 @@ logger = setup_logging()
 class TCGADataset(MMDataset):
     def __init__(
         self,
-        config: Union[str, Path],
+        data_path: Union[str, Path],
         dataset: str,
         sources: List = ["omic", "slides"],
         level: int = 2,
@@ -22,7 +22,7 @@ class TCGADataset(MMDataset):
         concat: bool = False,
         **kwargs,
     ):
-        super().__init__(config, **kwargs)
+        super().__init__(data_path, **kwargs)
         self.prep_path = self.data_path.joinpath(
             f"tcga/wsi/{dataset}_preprocessed_level{level}"
         )  # preprocessed data path
@@ -158,7 +158,7 @@ class TCGASurvivalDataset(TCGADataset):
 
     def __init__(
         self,
-        config: Union[str, Path],
+        data_path: Union[str, Path],
         dataset: str,
         sources: List = ["omic", "slides"],
         level: int = 2,
@@ -168,7 +168,7 @@ class TCGASurvivalDataset(TCGADataset):
         **kwargs,
     ):
         super().__init__(
-            config, dataset, sources, level, filter_overlap, patch_wsi, **kwargs
+            data_path, dataset, sources, level, filter_overlap, patch_wsi, **kwargs
         )
         self.n_bins = n_bins
 
@@ -222,10 +222,10 @@ if __name__ == "__main__":
     # tensors = data[0]
     # for tensor in tensors:
     #     print(tensor.shape)
-    data = TCGASurvivalDataset(
-        config="config/config.yml", dataset="brca", expand_dims=True
-    )
-    tensors, censorship, event_time, target = data[0]
-    print(tensors)
+    config = Config("config/config.yml").read()
+    # print(config.to_dict())
+    data = TCGASurvivalDataset(**config.to_dict(), dataset="brca", expand_dims=True)
+    # tensors, censorship, event_time, target = data[0]
+    # print(tensors)
     # print(torch.unique(data.target, return_counts=True))
     # print(tensors)
