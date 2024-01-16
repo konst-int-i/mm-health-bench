@@ -32,8 +32,8 @@ class TCGADataset(MMDataset):
         self.filter_overlap = filter_overlap
         self.patch_wsi = patch_wsi
         self.concat = concat  # whether to flatten tensor for early fusion
-        self._check_args()
 
+        self._check_args()
         # pre-fetch data
         self.omic_df = self.load_omic()
         self.slide_ids = self.omic_df["slide_id"].str.strip(".svs")
@@ -49,6 +49,20 @@ class TCGADataset(MMDataset):
         assert all(
             source in valid_sources for source in self.sources
         ), "Invalid source specified"
+
+        valid_datasets = [
+            "blca",
+            "brca",
+            "kirp",
+            "ucec",
+            "hnsc",
+            "paad",
+            "luad",
+            "lusc",
+        ]
+        assert (
+            self.dataset in valid_datasets
+        ), f"Invalid dataset, must be one of {valid_datasets}"
 
     def __getitem__(self, idx: int) -> Tuple:
         tensors = []
