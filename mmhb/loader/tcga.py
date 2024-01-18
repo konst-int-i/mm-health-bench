@@ -15,7 +15,7 @@ class TCGADataset(MMDataset):
         self,
         data_path: Union[str, Path],
         dataset: str,
-        sources: List = ["omic", "slides"],
+        modalities: List = ["omic", "slides"],
         level: int = 2,
         filter_overlap: bool = True,
         patch_wsi: bool = True,
@@ -28,7 +28,7 @@ class TCGADataset(MMDataset):
         )  # preprocessed data path
         self.dataset = dataset
         self.level = level
-        self.sources = sources
+        self.modalities = modalities
         self.filter_overlap = filter_overlap
         self.patch_wsi = patch_wsi
         self.concat = concat  # whether to flatten tensor for early fusion
@@ -43,11 +43,11 @@ class TCGADataset(MMDataset):
         self.omic_tensor = torch.Tensor(self.omic_df.values)
 
     def _check_args(self):
-        assert len(self.sources) > 0, "No sources specified"
+        assert len(self.modalities) > 0, "No sources specified"
 
         valid_sources = ["omic", "slides"]
         assert all(
-            source in valid_sources for source in self.sources
+            source in valid_sources for source in self.modalities
         ), "Invalid source specified"
 
         valid_datasets = [
@@ -66,9 +66,9 @@ class TCGADataset(MMDataset):
 
     def __getitem__(self, idx: int) -> Tuple:
         tensors = []
-        if "omic" in self.sources:
+        if "omic" in self.modalities:
             tensors.append(self.omic_tensor[idx])
-        if "slides" in self.sources:
+        if "slides" in self.modalities:
             tensors.append(self.load_patches(slide_id=self.slide_ids[idx]))
 
         if self.concat:
@@ -87,7 +87,7 @@ class TCGADataset(MMDataset):
 
     @property
     def num_modalities(self) -> int:
-        return len(self.sources)
+        return len(self.modalities)
 
     def load_omic(self) -> pd.DataFrame:
         load_path = self.data_path.joinpath(
@@ -165,7 +165,7 @@ class TCGASurvivalDataset(TCGADataset):
         self,
         data_path: Union[str, Path],
         dataset: str,
-        sources: List = ["omic", "slides"],
+        modalities: List = ["omic", "slides"],
         level: int = 2,
         filter_overlap: bool = True,
         patch_wsi: bool = True,
@@ -173,7 +173,7 @@ class TCGASurvivalDataset(TCGADataset):
         **kwargs,
     ):
         super().__init__(
-            data_path, dataset, sources, level, filter_overlap, patch_wsi, **kwargs
+            data_path, dataset, modalities, level, filter_overlap, patch_wsi, **kwargs
         )
         self.n_bins = n_bins
 
