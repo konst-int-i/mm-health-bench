@@ -28,13 +28,51 @@ if you want the tensor shapes to be consistent. This will be matched to the shap
 
 ## Datasets supported
 
-Pathology: 
-* TCGA (14 cancer sites)
-* Camelyon17
-* Camelyon16
+
+### Semi restricted access
+
+The datasets in this section are open-source but may require you to register on their sites for a research project. 
+
+#### TCGA
+
+Collection of 14 sites from The Cancer Genome Atlas containing data on: 
+- Images
+  - Histopathology Slides
+- Tabular
+  - Gene epressions
+  - Mutations
+  - Copy Number Variations
+
+The modalities are consistent across TCGA cohorts. 
+
+Example use:
+```python
+# Task-agnostic
+# This class can be used as base for a variety of possible tasks with TCGA
+from mmhb.loader import *
+from mmhb.utils import Config
+
+config = Config("config/config.yml").read()
+
+data = TCGADataset(
+    **config.to_dict(),
+    dataset="brca", 
+    expand_dims=False, 
+    modalities=["omic", "slides"], 
+)
+# access sample
+omic_tensor, slide_tensor = data[0] 
 
 
-Radiology: 
+# One example of this task-specific is in survival analysis
+data = TCGASurvivalDataset(
+    **config.to_dict(),
+    dataset="brca", 
+    modalities=["omic", "slides"],
+)
+
+(omic_tensor, slide_tensor), censorship, event_time, target = data[0]
+```
 
 
 ## Setup 
