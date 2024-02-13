@@ -2,6 +2,8 @@ from invoke import task
 from typing import *
 import os
 from pathlib import Path
+import gdown
+import shutil
 import pandas as pd
 from mmhb.utils import detect_os
 
@@ -41,41 +43,64 @@ def download_mimic(c, data_dir: Path, samples: int = None):
 
 @task
 def download_chestx(c, data_dir: Path):
-    data_dir.mkdir(parents=True, exist_ok=True)
-    print(f"Downloading chestx dataset to {data_dir}...")
+    """
+
+    Args:
+        c:
+        data_dir:
+        include_dicom: Note: DICOM images are 75GB
+
+    Returns:
+
+    """
+
+    raw_dir = data_dir.joinpath("raw")
+    proc_dir = data_dir.joinpath("proc")
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    proc_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Downloading chestx dataset to {raw_dir}...")
 
     # download PNG images
-    if "NLMCXR_png.tgz" not in os.listdir(data_dir):
+    if "NLMCXR_png.tgz" not in os.listdir(raw_dir):
         print("Downloading chestx images...")
         c.run(
-            f"curl -0 https://openi.nlm.nih.gov/imgs/collections/NLMCXR_png.tgz -o {str(data_dir.joinpath('NLMCXR_png.tgz'))}"
+            f"curl -0 https://openi.nlm.nih.gov/imgs/collections/NLMCXR_png.tgz -o {str(raw_dir.joinpath('NLMCXR_png.tgz'))}"
         )
     # download reports
-    if "NLMCXR_reports.tgz" not in os.listdir(data_dir):
+    if "NLMCXR_reports.tgz" not in os.listdir(raw_dir):
         print("Downloading chestx reports...")
         c.run(
-            f"curl -0 https://openi.nlm.nih.gov/imgs/collections/NLMCXR_reports.tgz -o {str(data_dir.joinpath('NLMCXR_reports.tgz'))}"
+            f"curl -0 https://openi.nlm.nih.gov/imgs/collections/NLMCXR_reports.tgz -o {str(raw_dir.joinpath('NLMCXR_reports.tgz'))}"
         )
     # download term mapping
-    if "radiology_vocabulary_final.xlsx" not in os.listdir(data_dir):
+    if "radiology_vocabulary_final.xlsx" not in os.listdir(raw_dir):
         print("Downloading radiology vocabulary...")
         c.run(
-            f"curl -0 https://openi.nlm.nih.gov/imgs/collections/radiology_vocabulary_final.xlsx -o {str(data_dir.joinpath('radiology_vocabulary_final.xlsx'))}"
+            f"curl -0 https://openi.nlm.nih.gov/imgs/collections/radiology_vocabulary_final.xlsx -o {str(raw_dir.joinpath('radiology_vocabulary_final.xlsx'))}"
         )
 
+    if "TransChex_openi.zip" not in os.listdir(raw_dir):
+        print(f"Downloading indeces...")
+        id = "1jvT0jVl9mgtWy4cS7LYbF43bQE4mrXAY"
+        gdown.download(id=id)
+        shutil.move("TransChex_openi.zip", raw_dir.joinpath("TransChex_openi.zip"))
+
     # unzip
-    if "NLMCXR_png" not in os.listdir(data_dir):
+    if "NLMCXR_png" not in os.listdir(raw_dir):
         print("Extracting images...")
-        data_dir.joinpath("NLMCXR_png").mkdir(exist_ok=True)
+        raw_dir.joinpath("NLMCXR_png").mkdir(exist_ok=True)
         c.run(
-            f"tar -xvzf {data_dir.joinpath('NLMCXR_png.tgz')} -C {data_dir.joinpath('NLMCXR_png')}"
+            f"tar -xvzf {raw_dir.joinpath('NLMCXR_png.tgz')} -C {raw_dir.joinpath('NLMCXR_png')}"
         )
-    if "NLMCXR_reports" not in os.listdir(data_dir):
+    if "NLMCXR_reports" not in os.listdir(raw_dir):
         print("Extracting reports...")
-        data_dir.joinpath("NLMCXR_reports").mkdir(exist_ok=True)
+        raw_dir.joinpath("NLMCXR_reports").mkdir(exist_ok=True)
         c.run(
-            f"tar -xvzf {data_dir.joinpath('NLMCXR_reports.tgz')} -C {data_dir.joinpath('NLMCXR_reports')}"
+            f"tar -xvzf {raw_dir.joinpath('NLMCXR_reports.tgz')} -C {raw_dir.joinpath('NLMCXR_reports')}"
         )
+    if "TransChex_openi" not in os.listdir(raw_dir):
+        print("Extracting indeces...")
+        c.run(f"unzip {raw_dir.joinpath('TransChex_openi.zip')} -d {raw_dir}")
 
     print("ChestX dataset downloaded successfully.")
 
