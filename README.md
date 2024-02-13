@@ -7,12 +7,24 @@ and I will keep adding resources throughout the next months.
 
 ## Quickstart
 
-Example 
+ChestX example
 ```bash
-invoke install 
+mamba env create -f environment.yml 
+invoke download --dataset chestx
 ```
 
+```python
+from mmhb.loader import *
+from mmhb.utils import Config
 
+config = Config("config/config.yml").read()
+
+data = ChestXDataset(data_path="data/chestx", max_seq_length=256)
+
+(img_tensor, report_tensor), target = data[0] -> returns pytorch tensors
+
+# can now wrap in PyTorch dataloaders...
+```
 
 ## Overview
 
