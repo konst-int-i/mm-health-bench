@@ -1,6 +1,7 @@
 # Multi-modal health benchmarks
-Easy access of various multi-modal biomedical datasets, ready to use in Machine Learning pipelines. This is a working repository 
-and I will keep adding resources throughout the next months. 
+Easy access of various multi-modal biomedical datasets, ready to use in Machine Learning pipelines. 
+
+**This is a working repository and I will keep adding resources throughout the next months.** 
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
