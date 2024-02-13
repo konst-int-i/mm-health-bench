@@ -1,12 +1,28 @@
 # Multi-modal health benchmarks
-Easy access of various multi-modal healthcare datasets for Machine Learning pipelines. 
+Easy access of various multi-modal biomedical datasets, ready to use in Machine Learning pipelines. This is a working repository 
+and I will keep adding resources throughout the next months. 
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 
 ## Quickstart
 
-tbd
+Example 
+```bash
+invoke install 
+```
+
+
+
+## Overview
+
+| Dataset | Download                                                  | Usage                       | Details |
+| --- |-----------------------------------------------------------|-----------------------------|-----------------|
+| MIMIC-IV | `invoke download --dataset mimic`                         | `mmhb.loaders.MIMICDataset` | Link | 
+| TCGA | `invoke download --dataset tcga --sites ["brca", "luad"]` | `mmhb.loaders.TCGADataset` | Link |
+
+
+
 
 ## Modality shapes
 
@@ -18,7 +34,7 @@ The dataloaders all return data of the following shapes
 * Sequences: `(n s)` # s is the number of tokens in the sequence
 
 
-We offer the option to pass in `expan=True` to the multimodal dataloaders which will introduce "empty" channels if 
+We offer the option to pass in `expand=True` to the multimodal dataloaders which will introduce "empty" channels if 
 if you want the tensor shapes to be consistent. This will be matched to the shape of the highest-dimensional modality. 
 
 * Image: `(n h w c)`
@@ -47,13 +63,13 @@ The modalities are consistent across TCGA cohorts.
 
 Example use:
 ```python
-# Task-agnostic
-# This class can be used as base for a variety of possible tasks with TCGA
 from mmhb.loader import *
 from mmhb.utils import Config
 
 config = Config("config/config.yml").read()
 
+# Task-agnostic
+# This class can be used as base for a variety of possible tasks with TCGA
 data = TCGADataset(
     **config.to_dict(),
     dataset="brca", 
