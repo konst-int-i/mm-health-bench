@@ -10,12 +10,14 @@ from mmhb.utils import detect_os
 def download(
     c,
     dataset: str,
-    sites: Optional[List[str]] = ["brca"],
+    site: Optional[List[str]] = "brca",
     data_dir: Optional[str] = None,
+    samples: Optional[int] = None,
 ):
+    print(site)
     if data_dir is None:
         # set default
-        data_dir = Path("data/{dataset}")
+        data_dir = Path(f"data/{dataset}/")
 
     valid_datasets = ["tcga", "mimic", "chest-x"]
     assert (
@@ -24,44 +26,41 @@ def download(
 
     if dataset == "tcga":
         install_tcga_deps(c)
-        download_tcga(c, sites, data_dir)
+        download_tcga(c, site, data_dir, samples=samples)
 
 
 @task
-def download_tcga(c, sites: str, data_dir: Path, samples: int = None):
+def download_tcga(c, site: str, data_dir: Path, samples: int = None):
     valid_sites = ["brca", "blca", "kirp", "ucec", "hnsc", "paad", "luad", "lusc"]
     # check that all sites are in valid_sites
-    assert all(
-        site in valid_sites for site in sites
-    ), f"Invalid site, must be one of {valid_sites}"
+    assert site in valid_sites, f"Invalid TCGA site, must be one of {valid_sites}"
 
-    for site in sites:
-        download_dir = data_dir.joinpath(f"tcga/wsi/{site}")
-        if not download_dir.exists():
-            download_dir.mkdir(parents=True)
+    # for site in sites:
+    print(f"Downloading tcga-{site} dataset...")
+    Jdownload_dir = data_dir.joinpath(f"wsi/{site}")
+    if not download_dir.exists():
+        download_dir.mkdir(parents=True)
 
-        manifest_path = Path(
-            f"./data/tcga/gdc_manifests/filtered/{site}_wsi_manifest_filtered.txt"
-        )
+    manifest_path = Path(f"./data/tcga/gdc_manifests/{site}_wsi_manifest_filtered.txt")
 
-        if samples is not None:
-            manifest = pd.read_csv(manifest_path, sep="\t")
-            manifest = manifest.sample(n=int(samples), random_state=42)
-            tmp_path = manifest_path.parent.joinpath(f"{site}_tmp.txt")
-            manifest.to_csv(tmp_path, sep="\t", index=False)
-            print(f"Downloading {manifest.shape[0]} files from {site} dataset...")
-            c.run(f"gdc-client download -m {tmp_path} -d {download_dir}")
-            # cleanup
-            os.remove(tmp_path)
-        else:
-            command = f"gdc-client download -m {manifest_path} -d {download_dir}"
-            try:
-                c.run(command)
-            except Exception as e:
-                print(f"Error occurred: {e}")
-                print(f"Command: {command}")
+    if samples is not None:
+        manifest = pd.read_csv(manifest_path, sep="\t")
+        manifest = manifest.sample(n=int(samples), random_state=42)
+        tmp_path = manifest_path.parent.joinpath(f"{site}_tmp.txt")
+        manifest.to_csv(tmp_path, sep="\t", index=False)
+        print(f"Downloading {manifest.shape[0]} files from {site} dataset...")
+        c.run(f"./gdc-client download -m {tmp_path} -d {download_dir}")
+        # cleanup
+        os.remove(tmp_path)
+    else:
+        command = f"./gdc-client download -m {manifest_path} -d {download_dir}"
+        try:
+            c.run(command)
+        except Exception as e:
+            print(f"Error occurred: {e}")
+            print(f"Command: {command}")
 
-        flatten_tcga_dir(c, download_dir)  # flatten directory structure after download
+    flatten_tcga_dir(c, download_dir)  # flatten directory structure after download
     return None
 
 
@@ -69,8 +68,9 @@ def download_tcga(c, sites: str, data_dir: Path, samples: int = None):
 def install_tcga_deps(c):
     # check if gdc client is installed
     try:
-        c.run("gdc-client --version")
+        c.run("./gdc-client --version")
         print(f"gdc-client already installed at {os.getcwd()}")
+        return None
     except:
         pass
 
@@ -94,6 +94,7 @@ def install_tcga_deps(c):
 
     print(f"Installed gdc-client at {os.getcwd()}")
     # cleanup
+    print(f"Removing zip file")
     os.remove("gdc-client.zip")
 
 
@@ -112,4 +113,6 @@ def flatten_tcga_dir(c, download_dir: Path):
     # flatten directory structure
     c.run(f"find {download_dir} -type f -name '*.svs' -exec mv {{}} {download_dir} \;")
     # remove everything that's not a .svs file
-    c.run(f"find {download_dir} ! -name '*.svs' -delete")
+    # c.run(f"find {download_dir} ! -name '*.svs' -delete")
+    # c.run(f"find {download_dir} -type d -delete")
+    c.run(f"find {download_dir} -type f ! -name '*.svs' -exec rm -f {{}} +")
