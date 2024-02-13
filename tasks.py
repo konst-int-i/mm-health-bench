@@ -19,7 +19,7 @@ def download(
         # set default
         data_dir = Path(f"data/{dataset}/")
 
-    valid_datasets = ["tcga", "mimic", "chest-x"]
+    valid_datasets = ["tcga", "mimic", "chestx"]
     assert (
         dataset in valid_datasets
     ), f"Invalid dataset, specify one of {valid_datasets}"
@@ -27,6 +27,57 @@ def download(
     if dataset == "tcga":
         install_tcga_deps(c)
         download_tcga(c, site, data_dir, samples=samples)
+
+    elif dataset == "mimic":
+        download_mimic(c, data_dir, samples=samples)
+
+    elif dataset == "chestx":
+        download_chestx(c, data_dir)
+
+
+def download_mimic(c, data_dir: Path, samples: int = None):
+    pass
+
+
+@task
+def download_chestx(c, data_dir: Path):
+    data_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Downloading chestx dataset to {data_dir}...")
+
+    # download PNG images
+    if "NLMCXR_png.tgz" not in os.listdir(data_dir):
+        print("Downloading chestx images...")
+        c.run(
+            f"curl -0 https://openi.nlm.nih.gov/imgs/collections/NLMCXR_png.tgz -o {str(data_dir.joinpath('NLMCXR_png.tgz'))}"
+        )
+    # download reports
+    if "NLMCXR_reports.tgz" not in os.listdir(data_dir):
+        print("Downloading chestx reports...")
+        c.run(
+            f"curl -0 https://openi.nlm.nih.gov/imgs/collections/NLMCXR_reports.tgz -o {str(data_dir.joinpath('NLMCXR_reports.tgz'))}"
+        )
+    # download term mapping
+    if "radiology_vocabulary_final.xlsx" not in os.listdir(data_dir):
+        print("Downloading radiology vocabulary...")
+        c.run(
+            f"curl -0 https://openi.nlm.nih.gov/imgs/collections/radiology_vocabulary_final.xlsx -o {str(data_dir.joinpath('radiology_vocabulary_final.xlsx'))}"
+        )
+
+    # unzip
+    if "NLMCXR_png" not in os.listdir(data_dir):
+        print("Extracting images...")
+        data_dir.joinpath("NLMCXR_png").mkdir(exist_ok=True)
+        c.run(
+            f"tar -xvzf {data_dir.joinpath('NLMCXR_png.tgz')} -C {data_dir.joinpath('NLMCXR_png')}"
+        )
+    if "NLMCXR_reports" not in os.listdir(data_dir):
+        print("Extracting reports...")
+        data_dir.joinpath("NLMCXR_reports").mkdir(exist_ok=True)
+        c.run(
+            f"tar -xvzf {data_dir.joinpath('NLMCXR_reports.tgz')} -C {data_dir.joinpath('NLMCXR_reports')}"
+        )
+
+    print("ChestX dataset downloaded successfully.")
 
 
 @task
@@ -37,7 +88,7 @@ def download_tcga(c, site: str, data_dir: Path, samples: int = None):
 
     # for site in sites:
     print(f"Downloading tcga-{site} dataset...")
-    Jdownload_dir = data_dir.joinpath(f"wsi/{site}")
+    download_dir = data_dir.joinpath(f"wsi/{site}")
     if not download_dir.exists():
         download_dir.mkdir(parents=True)
 
