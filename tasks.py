@@ -48,7 +48,6 @@ def download_chestx(c, data_dir: Path):
     Args:
         c:
         data_dir:
-        include_dicom: Note: DICOM images are 75GB
 
     Returns:
 
