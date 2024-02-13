@@ -6,6 +6,7 @@ import gdown
 import shutil
 import pandas as pd
 from mmhb.utils import detect_os
+from mmhb.loader.chestx import preprocess_chestx
 
 
 @task
@@ -102,6 +103,9 @@ def download_chestx(c, data_dir: Path):
         c.run(f"unzip {raw_dir.joinpath('TransChex_openi.zip')} -d {raw_dir}")
 
     print("ChestX dataset downloaded successfully.")
+
+    print("Preprocessing chestx dataset...")
+    preprocess_chestx(raw_dir, proc_dir)
 
 
 @task

@@ -84,3 +84,13 @@ def test_tcga_survival(config):
     assert len(tensors) == 1
     # expected shape img(p * d) + tab(d)
     assert tensors[0].shape == torch.Size([(n_patches * patch_dim) + n_feats])
+
+
+def test_chestx(config):
+    data = ChestXDataset(data_path="data/chestx", max_seq_length=256)
+    tensors, target = data[1]
+    print(tensors[0].shape, tensors[1].shape)
+    assert len(tensors) == 2
+    assert tensors[0].shape == torch.Size([3, 256, 256])
+    # note that we currently pad the tensors here
+    assert tensors[1].shape == torch.Size([1, 256])

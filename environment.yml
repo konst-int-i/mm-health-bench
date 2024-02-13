@@ -12,6 +12,7 @@ dependencies:
   - pytest-cov
   - python=3.9
   - pytorch=1.13.1
+  - torchvision
   - python-box
   - pip
   - pip:
@@ -19,3 +20,4 @@ dependencies:
       - invoke
       - pre-commit
       - gdown
+      - transformers

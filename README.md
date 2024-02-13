@@ -16,10 +16,10 @@ invoke install
 
 ## Overview
 
-| Dataset | Download                                                  | Usage                       | Details |
-| --- |-----------------------------------------------------------|-----------------------------|-----------------|
-| MIMIC-IV | `invoke download --dataset mimic`                         | `mmhb.loaders.MIMICDataset` | Link | 
-| TCGA | `invoke download --dataset tcga --sites ["brca", "luad"]` | `mmhb.loaders.TCGADataset` | Link |
+| Dataset | Download                                                  | Usage                        | Details                                                                                                                  |
+|---------|-----------------------------------------------------------|------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| Chest-X | `invoke download --dataset chestx`                        | `mmhb.loaders.ChestXDataset` | [Link](https://openi.nlm.nih.gov/faq) | 
+| TCGA    | `invoke download --dataset tcga --sites ["brca", "luad"]` | `mmhb.loaders.TCGADataset`   | [Link](https://www.cancer.gov/ccg/research/genome-sequencing/tcga)                                                       |
 
 
 
