@@ -1,6 +1,4 @@
 import pandas as pd
-import einops
-import matplotlib.pyplot as plt
 from mmhb.loader import MMDataset
 from torchvision import transforms
 import numpy as np
@@ -64,6 +62,9 @@ class ChestXDataset(MMDataset):
         tensors = [image, report]
 
         return tensors, self.target[idx]
+
+    def __len__(self):
+        return len(self.target)
 
     def load_text_labels(self, path):
         txt_gt = pd.read_csv(path)
