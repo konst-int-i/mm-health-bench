@@ -87,11 +87,19 @@ def test_tcga_survival(config):
 
 
 def test_chestx(config):
-    data = ChestXDataset(data_path="data/chestx", max_seq_length=256)
+    data = ChestXDataset(
+        data_path="data/chestx",
+        max_seq_length=256,
+        modalities=["images", "reports"],
+        expand=True,
+    )
     tensors, target = data[1]
     print(len(data))
     print(tensors[0].shape, tensors[1].shape)
     assert len(tensors) == 2
-    assert tensors[0].shape == torch.Size([3, 256, 256])
+    # expecting h w c
+    shapes = data.shapes()
+    assert shapes["images"] == torch.Size([256, 256, 3])
     # note that we currently pad the tensors here
-    assert tensors[1].shape == torch.Size([1, 256])
+    assert shapes["reports"] == torch.Size([1, 256])
+    print(data.shapes())

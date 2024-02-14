@@ -1,4 +1,5 @@
 import pandas as pd
+import einops
 from mmhb.loader import MMDataset
 from torchvision import transforms
 import numpy as np
@@ -58,9 +59,13 @@ class ChestXDataset(MMDataset):
         img_path = self.data_path.joinpath("proc/images", self.img_name[idx])
         image = Image.open(img_path)
         image = self.preprocess_img(image)
+        # reshape to expected dims
+        image = einops.rearrange(image, "c h w -> h w c")
 
         # load report
         report = self.vectorize_report(self.reports[idx])
+        if not self.expand:
+            report = report.squeeze()
 
         tensors = [image, report]
 
