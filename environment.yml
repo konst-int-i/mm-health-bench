@@ -16,6 +16,7 @@ dependencies:
   - python-box
   - pip
   - pip:
+      - colorlog
       - h5py
       - invoke
       - pre-commit
