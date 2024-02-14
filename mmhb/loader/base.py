@@ -66,10 +66,8 @@ class MMDataset(Dataset):
         shape_dict = {}
         [
             shape_dict.update({mod: t.shape})
-            for t, mod in zip(self.tensors, self.modalities)
+            for t, mod in zip(self.tensor, self.modalities)
         ]
-        if self.targets is not None:
-            shape_dict.update({"target": self.targets.shape})
         return shape_dict
 
     @property
@@ -90,7 +88,7 @@ class MMSampleDataset(MMDataset):
         self.tensors = tensors
         self.targets = targets
 
-        self.tensor, self.target = self.__getitem__(0)
+        self.tensor, _ = self.__getitem__(0)
 
     def __len__(self):
         return len(self.tensors[0])

@@ -43,7 +43,8 @@ class TCGADataset(MMDataset):
         )
         self.omic_tensor = torch.Tensor(self.omic_df.values).squeeze()
 
-        self.tensors = TCGADataset.__getitem__(self, 0)
+        # required for shape() function
+        self.tensor = TCGADataset.__getitem__(self, 0)
 
     def _check_args(self):
         assert len(self.modalities) > 0, "No sources specified"
