@@ -29,7 +29,7 @@ def test_sample_dataset(config):
     # Generate list of tensors
     tensors = [tab, patch_img, seq]
 
-    data = MMSampleDataset(**config.to_dict(), tensors=tensors, target=target)
+    data = MMSampleDataset(**config.to_dict(), tensors=tensors, targets=target)
 
     assert len(data) == n
     assert data.num_modalities == 3
@@ -50,11 +50,11 @@ def test_tcga_survival(config):
     patch_dim = 2048
     n_feats = 2914  # tabular features
 
-    # TEST CASE - smoke test regular dims, expand_dims=False
+    # TEST CASE - smoke test regular dims, expand=False
     data = TCGASurvivalDataset(
         **config.to_dict(),
         dataset="brca",
-        expand_dims=False,
+        expand=False,
         modalities=["omic", "slides"],
     )
     assert data.num_modalities == 2
@@ -65,9 +65,9 @@ def test_tcga_survival(config):
     # check image shape
     assert tensors[1].shape == torch.Size([n_patches, patch_dim])
 
-    # TEST CASE - expand_dims=True
+    # TEST CASE - expand=True
     data = TCGASurvivalDataset(
-        **config.to_dict(), dataset="brca", modalities=["omic"], expand_dims=True
+        **config.to_dict(), dataset="brca", modalities=["omic"], expand=True
     )
     tensors, censorship, event_time, target = data[0]
     assert tensors[0].shape == torch.Size([1, n_feats])
@@ -77,7 +77,7 @@ def test_tcga_survival(config):
         **config.to_dict(),
         dataset="brca",
         modalities=["omic", "slides"],
-        expand_dims=False,
+        expand=False,
         concat=True,
     )
     tensors, censorship, event_time, target = data[0]
@@ -89,6 +89,7 @@ def test_tcga_survival(config):
 def test_chestx(config):
     data = ChestXDataset(data_path="data/chestx", max_seq_length=256)
     tensors, target = data[1]
+    print(len(data))
     print(tensors[0].shape, tensors[1].shape)
     assert len(tensors) == 2
     assert tensors[0].shape == torch.Size([3, 256, 256])

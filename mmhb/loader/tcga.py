@@ -16,13 +16,14 @@ class TCGADataset(MMDataset):
         data_path: Union[str, Path],
         dataset: str,
         modalities: List = ["omic", "slides"],
+        expand: bool = False,
         level: int = 2,
         filter_overlap: bool = True,
         patch_wsi: bool = True,
         concat: bool = False,
         **kwargs,
     ):
-        super().__init__(data_path, **kwargs)
+        super().__init__(data_path, expand, modalities, **kwargs)
         self.prep_path = self.data_path.joinpath(
             f"tcga/wsi/{dataset}_preprocessed_level{level}"
         )  # preprocessed data path
@@ -40,7 +41,9 @@ class TCGADataset(MMDataset):
         self.omic_df = self.omic_df.drop(
             ["site", "oncotree_code", "case_id", "slide_id", "train"], axis=1
         )
-        self.omic_tensor = torch.Tensor(self.omic_df.values)
+        self.omic_tensor = torch.Tensor(self.omic_df.values).squeeze()
+
+        self.tensors = TCGADataset.__getitem__(self, 0)
 
     def _check_args(self):
         assert len(self.modalities) > 0, "No sources specified"
@@ -67,16 +70,22 @@ class TCGADataset(MMDataset):
     def __getitem__(self, idx: int) -> Tuple:
         tensors = []
         if "omic" in self.modalities:
-            tensors.append(self.omic_tensor[idx])
+            tensor = self.omic_tensor[idx]
+            if self.expand:
+                tensor = tensor.unsqueeze(0)
+            tensors.append(tensor)
         if "slides" in self.modalities:
-            tensors.append(self.load_patches(slide_id=self.slide_ids[idx]))
+            tensor = self.load_patches(slide_id=self.slide_ids[idx])
+            if self.expand:
+                tensor = tensor.unsqueeze(0)
+            tensors.append(tensor)
 
         if self.concat:
             tensors = torch.cat([torch.flatten(t) for t in tensors], dim=0)
-            if self.expand_dims:
-                # expand again for healnet
-                tensors = tensors.unsqueeze(0)
-            # return as list (even if concatenated)
+            # if self.expand:
+            #     # expand again for healnet
+            #     tensors = tensors.unsqueeze(0)
+            # # return as list (even if concatenated)
             tensors = [tensors]
         assert isinstance(tensors, list), "tensors must be a list"
 
@@ -165,6 +174,7 @@ class TCGASurvivalDataset(TCGADataset):
         self,
         data_path: Union[str, Path],
         dataset: str,
+        expand: bool = False,
         modalities: List = ["omic", "slides"],
         level: int = 2,
         filter_overlap: bool = True,
@@ -173,7 +183,14 @@ class TCGASurvivalDataset(TCGADataset):
         **kwargs,
     ):
         super().__init__(
-            data_path, dataset, modalities, level, filter_overlap, patch_wsi, **kwargs
+            data_path,
+            dataset,
+            modalities,
+            expand,
+            level,
+            filter_overlap,
+            patch_wsi,
+            **kwargs,
         )
         self.n_bins = n_bins
 
@@ -183,23 +200,21 @@ class TCGASurvivalDataset(TCGADataset):
         self.features = self.omic_df.drop(
             ["censorship", "survival_months", "y_disc"], axis=1
         )
+        self.omic_tensor = torch.Tensor(self.features.values).squeeze()
 
-        self.omic_tensor = torch.Tensor(self.features.values)
-
-        if self.expand_dims:
-            self.omic_tensor = einops.repeat(
-                self.omic_tensor, pattern="n d -> n c d", c=1
-            )  # add empty channel
         self.censorship = self.omic_df["censorship"]
         self.event_time = self.omic_df["survival_months"]
-        self.target = torch.Tensor(
+        self.targets = torch.Tensor(
             self.omic_df["y_disc"].values
         ).long()  # cast as int64 since sksurv requires this for c-index
+
+        # self.tensor defined in parent
+        self.target = self.targets[0]
 
     def __getitem__(self, idx: int):
         # get list of tensors
         tensors = super().__getitem__(idx)
-        return tensors, self.censorship[idx], self.event_time[idx], self.target[idx]
+        return tensors, self.censorship[idx], self.event_time[idx], self.targets[idx]
 
     def _calc_survival(self, eps: float = 1e-6):
         survival = "survival_months"
@@ -231,8 +246,4 @@ if __name__ == "__main__":
     #     print(tensor.shape)
     config = Config("config/config.yml").read()
     # print(config.to_dict())
-    data = TCGASurvivalDataset(**config.to_dict(), dataset="brca", expand_dims=True)
-    # tensors, censorship, event_time, target = data[0]
-    # print(tensors)
-    # print(torch.unique(data.target, return_counts=True))
-    # print(tensors)
+    data = TCGASurvivalDataset(**config.to_dict(), dataset="brca", expand=True)

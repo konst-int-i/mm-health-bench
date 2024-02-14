@@ -17,19 +17,34 @@ class MMDataset(Dataset):
         self,
         # config: Union[str, Path],
         data_path: Union[str, Path],
-        expand_dims: bool = True,
+        expand: bool = True,
+        modalities: List[str] = None,
     ):
         """
+        Base class for multimodal datasets. Note that each child class should implement the following methods:
+        __getitem__()
+        __len__()
+        shapes()
+
+        and should assign the properties from a single sample
+        self.tensor # note that the tensors should be implemented in the same order as modalities are specified in self.modalities
+        self.target
+
         Args:
             data_path (Union[str, Path]): path to data source directory
-            expand_dims (bool, optional): whether to expand dimensions across tensors with mismatching dims
+            expand (bool, optional): whether to expand dimensions across tensors with mismatching dims
         """
-        self.expand_dims = expand_dims
+        self.expand = expand
         self.data_path = Path(data_path)
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         logger.debug(f"Using device: {self.device}")
+        self.modalities = modalities
         self.tensors = None
-        self.target = None
+        self.targets = None
+
+        # individual sample
+        self.tensor = None
+        self.targets = None
 
     def __getitem__(
         self, idx
@@ -47,6 +62,20 @@ class MMDataset(Dataset):
     def num_modalities(self):
         return 0 if self.tensors is None else len(self.tensors)
 
+    def shapes(self):
+        shape_dict = {}
+        [
+            shape_dict.update({mod: t.shape})
+            for t, mod in zip(self.tensors, self.modalities)
+        ]
+        if self.targets is not None:
+            shape_dict.update({"target": self.targets.shape})
+        return shape_dict
+
+    @property
+    def info(self):
+        return f"{self.__class__.__name__} with {len(self)} samples and {self.num_modalities} modalities"
+
 
 class MMSampleDataset(MMDataset):
     def __init__(
@@ -54,19 +83,21 @@ class MMSampleDataset(MMDataset):
         # config: Union[str, Path],
         data_path: Union[str, Path],
         tensors: List[torch.Tensor],
-        target: torch.Tensor,
+        targets: torch.Tensor,
         **kwargs,
     ):
         super().__init__(data_path, **kwargs)
         self.tensors = tensors
-        self.target = target
+        self.targets = targets
+
+        self.tensor, self.target = self.__getitem__(0)
 
     def __len__(self):
         return len(self.tensors[0])
 
     def __getitem__(self, idx: int) -> Union[List, Tuple]:
         tensors = [t[idx] for t in self.tensors]
-        target = self.target[idx]
+        target = self.targets[idx]
         return (tensors, target)
 
 

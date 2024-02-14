@@ -17,13 +17,13 @@ class ChestXDataset(MMDataset):
     def __init__(
         self,
         data_path: Union[str, Path],
+        expand: bool = False,
         modalities: List = ["images", "reports"],
         max_seq_length: int = 512,
         **kwargs
     ):
-        super().__init__(data_path, **kwargs)
+        super().__init__(data_path, expand, modalities, **kwargs)
 
-        self.modalities = modalities
         self.max_seq_length = max_seq_length
         self.dataset = "chestx"
         self.df = self.load_text_labels(
@@ -32,7 +32,7 @@ class ChestXDataset(MMDataset):
 
         self.reports = self.df["report"]
         self.img_name = self.df["id"]
-        self.target = self.df["list"]
+        self.targets = self.df["list"]
 
         # image preprocessing utils
         self.preprocess_img = transforms.Compose(
@@ -48,6 +48,9 @@ class ChestXDataset(MMDataset):
             "bert-base-uncased", do_lower_case=False
         )
 
+        # assign single sample
+        self.tensor, self.target = self.__getitem__(0)
+
     def __getitem__(self, idx):
         name = self.img_name[idx].split(".")[0]
 
@@ -61,10 +64,10 @@ class ChestXDataset(MMDataset):
 
         tensors = [image, report]
 
-        return tensors, self.target[idx]
+        return tensors, self.targets[idx]
 
     def __len__(self):
-        return len(self.target)
+        return len(self.targets)
 
     def load_text_labels(self, path):
         txt_gt = pd.read_csv(path)

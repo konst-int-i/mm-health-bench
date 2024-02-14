@@ -51,12 +51,12 @@ The dataloaders all return data of the following shapes
 
 
 We offer the option to pass in `expand=True` to the multimodal dataloaders which will introduce "empty" channels if 
-if you want the tensor shapes to be consistent. This will be matched to the shape of the highest-dimensional modality. 
+if you want the tensor shapes to be more consistent. This will expand the shapes to: 
 
 * Image: `(n h w c)`
 * Image (patched): `(n 1 p d)`
-* Tabular: `(n 1 1 d)`
-* Sequences: `(n 1 1 s)`
+* Tabular: `(n 1 d)`
+* Sequences: `(n 1 s)`
 
 ## Datasets supported
 
