@@ -77,8 +77,6 @@ class TCGADataset(MMDataset):
             tensors.append(tensor)
         if "slides" in self.modalities:
             tensor = self.load_patches(slide_id=self.slide_ids[idx])
-            if self.expand:
-                tensor = tensor.unsqueeze(0)
             tensors.append(tensor)
 
         if self.concat:

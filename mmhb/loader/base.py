@@ -101,7 +101,3 @@ class MMSampleDataset(MMDataset):
 
 if __name__ == "__main__":
     pass
-    # dataset = MMDataset([torch.randn(10, 3, 224, 224), torch.randn(10, 3, 224, 224)], torch.randint(0, 10, (10,)))
-    # print(dataset[0])
-    # print(len(dataset))
-    # print(dataset.num_modalities)
