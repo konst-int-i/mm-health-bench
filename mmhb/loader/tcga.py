@@ -1,11 +1,19 @@
+import h5py
 import pandas as pd
 import einops
+from openslide import OpenSlide
+from torchvision import models as models, transforms
+from tqdm import tqdm
+
 from mmhb.loader import MMDataset
 from mmhb.utils import setup_logging, RepeatTransform, RearrangeTransform, Config
 import torch
 import os
 from typing import Union, List, Tuple
 from pathlib import Path
+from tiatoolbox.tools import stainnorm
+from tiatoolbox.models.engine.patch_predictor import PatchPredictor
+from tiatoolbox import data
 
 logger = setup_logging()
 
@@ -76,8 +84,11 @@ class TCGADataset(MMDataset):
                 tensor = tensor.unsqueeze(0)
             tensors.append(tensor)
         if "slides" in self.modalities:
-            tensor = self.load_patches(slide_id=self.slide_ids[idx])
-            tensors.append(tensor)
+            if self.patch_wsi:
+                tensor = self.load_patches(slide_id=self.slide_ids[idx])
+                tensors.append(tensor)
+            else:
+                raise NotImplementedError("Raw WSI loader not implemented")
 
         if self.concat:
             tensors = torch.cat([torch.flatten(t) for t in tensors], dim=0)
@@ -235,6 +246,107 @@ class TCGASurvivalDataset(TCGADataset):
             include_lowest=True,
         ).values
         return df
+
+
+def encode_patches(
+    level: int, prep_path: Path, site_path: Path, pretraining: str = "kather"
+):
+    slide_ids = [
+        x.rstrip(".h5")
+        for x in os.listdir(prep_path.joinpath("patches"))
+        if x.endswith(".h5")
+    ]
+    # load patch coords
+    coords = {}
+    for slide_id in slide_ids:
+        patch_path = prep_path.joinpath(f"patches/{slide_id}.h5")
+        try:
+            h5_file = h5py.File(patch_path, "r")
+            patch_coords = h5_file["coords"][:]
+            coords[slide_id] = patch_coords
+        except FileNotFoundError as e:
+            print(f"No patches available for file {patch_path}")
+            pass
+    max_patches = max([coords.get(key).shape[0] for key in coords.keys()])
+    print(f"Max patches: {max_patches}")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    if pretraining == "imagenet":
+        # load in resnet50 model
+        feat_path = prep_path.joinpath("patch_features")
+
+        patch_encoder = models.resnet50(
+            weights=models.resnet.ResNet50_Weights.IMAGENET1K_V2
+        )
+        patch_encoder = torch.nn.Sequential(
+            *(list(patch_encoder.children())[:-1])
+        )  # remove classifier head
+        patch_encoder.to(device)
+        patch_encoder.eval()
+        patch_tensors = torch.zeros(max_patches, 2048)
+        encode = transforms.Compose(
+            [
+                transforms.Lambda(
+                    lambda x: x.convert("RGB")
+                ),  # need to convert to RGB for ResNet encoding
+                transforms.ToTensor(),
+                transforms.Resize((224, 224)),  # resize in line with ResNet50
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
+                transforms.Lambda(lambda x: x.unsqueeze(0).to(device)),
+                transofrms.Lambda(lambda x: patch_encoder(x)),
+            ]
+        )
+
+    if pretraining == "kather":
+        feat_path = prep_path.joinpath("patch_features_kather")
+        norm_target = data.stain_norm_target()
+        normalizer = stainnorm.VahadaneNormalizer()
+        normalizer.fit(norm_target)
+        predictor = PatchPredictor(pretrained_model="resnet18-kather100k", batch_size=1)
+        patch_encoder = torch.nn.Sequential(*list(predictor.model.children())[:-1]).to(
+            device
+        )
+        patch_encoder.eval()
+
+        encode = transforms.Compose(
+            [
+                transforms.Lambda(lambda x: x.convert("RGB")),
+                transforms.Lambda(lambda x: normalizer.transform(x.copy())),
+                transforms.ToTensor(),
+                transforms.Lambda(lambda x: einops.repeat(x, "c h w -> b c h w", b=1)),
+                transforms.Lambda(lambda x: x.float().to(device)),
+                transforms.Lambda(lambda x: patch_encoder(x).squeeze()),
+            ]
+        )
+        patch_tensors = torch.zeros(max_patches, 512)
+
+        # emb = encode(patch)
+
+    num_slides = len(slide_ids)
+    # extract features
+    for slide_count, slide_id in enumerate(coords.keys()):
+        save_path = feat_path.joinpath(f"{slide_id}.pt")
+        # check if features already extracted
+        if os.path.exists(save_path):
+            print(f"Features already extracted for slide {slide_id}, skipping...")
+            continue
+
+        slide = OpenSlide(site_path.joinpath(f"{slide_id}.svs"))
+        print(f"slide {slide_count + 1}/{num_slides}")
+
+        for idx, coord in enumerate(tqdm(coords[slide_id])):
+            x, y = coord
+
+            patch_region = slide.read_region((x, y), level=int(level), size=(256, 256))
+            patch_features = encode(patch_region)
+            patch_tensors[idx] = patch_features.cpu().detach().squeeze()
+
+        # save features
+        if not feat_path.exists():
+            feat_path.mkdir(parents=False)
+        torch.save(patch_tensors, save_path)
 
 
 if __name__ == "__main__":

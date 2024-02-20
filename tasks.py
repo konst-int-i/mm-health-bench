@@ -1,12 +1,15 @@
-from invoke import task
 from typing import *
-import os
-from pathlib import Path
 import gdown
 import shutil
-import pandas as pd
+
+from mmhb.loader.tcga import encode_patches
 from mmhb.utils import detect_os
 from mmhb.loader.chestx import preprocess_chestx
+from invoke import task
+from pathlib import Path
+from openslide import OpenSlide
+import pandas as pd
+import os
 
 
 @task
@@ -191,7 +194,61 @@ def flatten_tcga_dir(c, download_dir: Path):
     """
     # flatten directory structure
     c.run(f"find {download_dir} -type f -name '*.svs' -exec mv {{}} {download_dir} \;")
-    # remove everything that's not a .svs file
-    # c.run(f"find {download_dir} ! -name '*.svs' -delete")
-    # c.run(f"find {download_dir} -type d -delete")
     c.run(f"find {download_dir} -type f ! -name '*.svs' -exec rm -f {{}} +")
+
+
+@task
+def preprocess(
+    c,
+    path: str,
+    site: str,
+    step: str = "patch",
+    level: int = 3,
+    patch_size: int = 256,
+    pretraining: str = "kather",
+):
+    wsi_path = Path(path)
+    assert os.path.exists(wsi_path), "`wsi_dir` not found"
+    assert site in os.listdir(
+        wsi_path
+    ), "Invalid site, must be directory in specified wsi_dir"
+    site_path = wsi_path.joinpath(site)
+    prep_path = wsi_path.joinpath(f"{site}_preprocessed_level{level}")
+    prep_path.mkdir(parents=True, exist_ok=True)
+
+    valid_steps = ["patch", "features"]
+    assert step in valid_steps, f"Invalid step parameter, must be one of {valid_steps}"
+
+    # check which WSIs are available at specified level
+    if not os.path.exists(prep_path.joinpath("valid_prep_ids.csv")):
+        # check which slides have specified level available (only pass those to preprocessing)
+        valid_ids = []
+        for slide_id in os.listdir(site_path):
+            # check whether specified level is available in slide
+            slide = OpenSlide(site_path.joinpath(f"{slide_id}"))
+            try:
+                slide.level_dimensions[int(level)]
+                valid_ids.append(slide_id)
+            except IndexError as e:
+                print(f"Level {level} not available for slide {slide_id}")
+                continue
+
+        # write temp csv file with valid slide ids to pass to CLAM
+        valid_slide_df = pd.DataFrame({"slide_id": valid_ids})
+        valid_slide_df.to_csv(prep_path.joinpath("valid_prep_ids.csv"), index=False)
+
+    if step == "patch":
+        # generate patches of specified size at given magnification level (3 being lowest magnification)
+        if not os.path.exists("CLAM/"):
+            c.run("git clone git@github.com:mahmoodlab/CLAM.git")
+
+        c.run(
+            f"python CLAM/create_patches_fp.py --source {site_path} --save_dir {prep_path} --process_list valid_prep_ids.csv "
+            f"--patch_size {patch_size} --patch_level {int(level)} --seg --patch --stitch"
+        )
+        # remove CLAM directory
+        shutil.rmtree("CLAM")
+
+    if step == "features":
+        # only take preprocessed slides
+        encode_patches(level, prep_path, site_path, pretraining)
