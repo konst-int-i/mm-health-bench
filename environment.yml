@@ -14,6 +14,7 @@ dependencies:
   - pytest-cov
   - python=3.9
   - pytorch=1.13.1
+  - tiatoolbox
   - torchvision
   - python-box
   - pip
