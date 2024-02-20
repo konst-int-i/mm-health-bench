@@ -4,7 +4,7 @@ import einops
 from openslide import OpenSlide
 from torchvision import models as models, transforms
 from tqdm import tqdm
-
+import numpy as np
 from mmhb.loader import MMDataset
 from mmhb.utils import setup_logging, RepeatTransform, RearrangeTransform, Config
 import torch
@@ -270,6 +270,7 @@ def encode_patches(
     max_patches = max([coords.get(key).shape[0] for key in coords.keys()])
     print(f"Max patches: {max_patches}")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
 
     if pretraining == "imagenet":
         # load in resnet50 model
@@ -278,13 +279,9 @@ def encode_patches(
         patch_encoder = models.resnet50(
             weights=models.resnet.ResNet50_Weights.IMAGENET1K_V2
         )
-        patch_encoder = torch.nn.Sequential(
-            *(list(patch_encoder.children())[:-1])
-        )  # remove classifier head
-        patch_encoder.to(device)
-        patch_encoder.eval()
+
         patch_tensors = torch.zeros(max_patches, 2048)
-        encode = transforms.Compose(
+        transform = transforms.Compose(
             [
                 transforms.Lambda(
                     lambda x: x.convert("RGB")
@@ -294,10 +291,13 @@ def encode_patches(
                 transforms.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
-                transforms.Lambda(lambda x: x.unsqueeze(0).to(device)),
-                transofrms.Lambda(lambda x: patch_encoder(x)),
             ]
         )
+
+        encode = torch.nn.Sequential(*(list(patch_encoder.children())[:-1])).to(
+            device
+        )  # remove classifier head
+        encode.eval()
 
     if pretraining == "kather":
         feat_path = prep_path.joinpath("patch_features_kather")
@@ -305,21 +305,23 @@ def encode_patches(
         normalizer = stainnorm.VahadaneNormalizer()
         normalizer.fit(norm_target)
         predictor = PatchPredictor(pretrained_model="resnet18-kather100k", batch_size=1)
-        patch_encoder = torch.nn.Sequential(*list(predictor.model.children())[:-1]).to(
-            device
-        )
-        patch_encoder.eval()
 
-        encode = transforms.Compose(
+        transform = transforms.Compose(
             [
-                transforms.Lambda(lambda x: x.convert("RGB")),
+                transforms.Lambda(lambda x: np.array(x.convert("RGB"))),
                 transforms.Lambda(lambda x: normalizer.transform(x.copy())),
                 transforms.ToTensor(),
                 transforms.Lambda(lambda x: einops.repeat(x, "c h w -> b c h w", b=1)),
-                transforms.Lambda(lambda x: x.float().to(device)),
-                transforms.Lambda(lambda x: patch_encoder(x).squeeze()),
+                transforms.Lambda(lambda x: x.float()),
+                # transforms.Lambda(lambda x: x.float().to(device)),
+                # transforms.Lambda(lambda x: patch_encoder(x).squeeze()),
             ]
         )
+
+        encode = torch.nn.Sequential(*list(predictor.model.children())[:-1]).to(device)
+        encode.eval()
+
+        # encode = encode.to(device)
         patch_tensors = torch.zeros(max_patches, 512)
 
         # emb = encode(patch)
@@ -340,6 +342,8 @@ def encode_patches(
             x, y = coord
 
             patch_region = slide.read_region((x, y), level=int(level), size=(256, 256))
+            patch_region = transform(patch_region)
+            patch_region = patch_region.to(device)
             patch_features = encode(patch_region)
             patch_tensors[idx] = patch_features.cpu().detach().squeeze()
 
