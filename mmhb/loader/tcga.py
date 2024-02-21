@@ -1,5 +1,7 @@
 import h5py
 import pandas as pd
+import threading
+import tables
 import einops
 from openslide import OpenSlide
 from torchvision import models as models, transforms
@@ -251,19 +253,21 @@ class TCGASurvivalDataset(TCGADataset):
 def encode_patches(
     level: int, prep_path: Path, site_path: Path, pretraining: str = "kather"
 ):
-    slide_ids = [
-        x.rstrip(".h5")
-        for x in os.listdir(prep_path.joinpath("patches"))
-        if x.endswith(".h5")
-    ]
+    # print("slide ids", len(slide_ids))
+    print(f"Prep path: {prep_path}")
+    print(f"Reading from: {prep_path.joinpath('patches')}")
+    slide_files = os.listdir(prep_path.joinpath("patches"))
+
     # load patch coords
     coords = {}
-    for slide_id in slide_ids:
-        patch_path = prep_path.joinpath(f"patches/{slide_id}.h5")
+    for slide_file in slide_files:
+        patch_path = prep_path.joinpath(f"patches/{slide_file}")
+        file = tables.open_file(patch_path, "r")
         try:
-            h5_file = h5py.File(patch_path, "r")
-            patch_coords = h5_file["coords"][:]
+            patch_coords = file.get_node("/coords")[:]
+            slide_id = str(slide_file)[:-3]
             coords[slide_id] = patch_coords
+            file.close()
         except FileNotFoundError as e:
             print(f"No patches available for file {patch_path}")
             pass
@@ -309,7 +313,6 @@ def encode_patches(
         transform = transforms.Compose(
             [
                 transforms.Lambda(lambda x: np.array(x.convert("RGB"))),
-                transforms.Lambda(lambda x: normalizer.transform(x.copy())),
                 transforms.ToTensor(),
                 transforms.Lambda(lambda x: einops.repeat(x, "c h w -> b c h w", b=1)),
                 transforms.Lambda(lambda x: x.float()),
@@ -326,19 +329,20 @@ def encode_patches(
 
         # emb = encode(patch)
 
-    num_slides = len(slide_ids)
+    num_slides = len(slide_files)
     # extract features
-    for slide_count, slide_id in enumerate(coords.keys()):
-        save_path = feat_path.joinpath(f"{slide_id}.pt")
+    for slide_count, slide_file in enumerate(coords.keys()):
+        save_path = feat_path.joinpath(f"{slide_file}.pt")
         # check if features already extracted
         if os.path.exists(save_path):
-            print(f"Features already extracted for slide {slide_id}, skipping...")
+            print(f"Features already extracted for slide {slide_file}, skipping...")
             continue
 
-        slide = OpenSlide(site_path.joinpath(f"{slide_id}.svs"))
+        slide = OpenSlide(site_path.joinpath(f"{slide_file}.svs"))
         print(f"slide {slide_count + 1}/{num_slides}")
+        print("file: ", site_path.joinpath(f"{slide_file}.svs"))
 
-        for idx, coord in enumerate(tqdm(coords[slide_id])):
+        for idx, coord in enumerate(tqdm(coords[slide_file])):
             x, y = coord
 
             patch_region = slide.read_region((x, y), level=int(level), size=(256, 256))
