@@ -253,7 +253,6 @@ class TCGASurvivalDataset(TCGADataset):
 def encode_patches(
     level: int, prep_path: Path, site_path: Path, pretraining: str = "kather"
 ):
-    # print("slide ids", len(slide_ids))
     print(f"Prep path: {prep_path}")
     print(f"Reading from: {prep_path.joinpath('patches')}")
     slide_files = os.listdir(prep_path.joinpath("patches"))
@@ -316,18 +315,13 @@ def encode_patches(
                 transforms.ToTensor(),
                 transforms.Lambda(lambda x: einops.repeat(x, "c h w -> b c h w", b=1)),
                 transforms.Lambda(lambda x: x.float()),
-                # transforms.Lambda(lambda x: x.float().to(device)),
-                # transforms.Lambda(lambda x: patch_encoder(x).squeeze()),
             ]
         )
 
         encode = torch.nn.Sequential(*list(predictor.model.children())[:-1]).to(device)
         encode.eval()
 
-        # encode = encode.to(device)
         patch_tensors = torch.zeros(max_patches, 512)
-
-        # emb = encode(patch)
 
     num_slides = len(slide_files)
     # extract features
