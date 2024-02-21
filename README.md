@@ -16,13 +16,10 @@ invoke download --dataset chestx
 
 ```python
 from mmhb.loader import *
-from mmhb.utils import Config
-
-config = Config("config/config.yml").read()
 
 data = ChestXDataset(data_path="data/chestx", max_seq_length=256)
 
-(img_tensor, report_tensor), target = data[0] -> returns pytorch tensors
+(img_tensor, report_tensor), target = data[0] # -> returns pytorch tensors
 
 # can now wrap in PyTorch dataloaders...
 ```
@@ -60,10 +57,36 @@ if you want the tensor shapes to be more consistent. This will expand the shapes
 
 ## Datasets supported
 
+### Open Access
+
+#### Chest-X
+No registration required - contains chest x-ray images and corresponding radiology reports. 
+
+```python
+from mmhb.loader import *
+data = ChestXDataset(data_path="data/chestx", max_seq_length=256)
+
+(img_tensor, report_tensor), target = data[0] # -> returns pytorch tensors
+
+```
+
+
 
 ### Semi restricted access
 
 The datasets in this section are open-source but may require you to register on their sites for a research project. 
+
+#### ADNI
+
+The Alzheimer's Disease Neuroimaging Initiative (ADNI) 
+
+
+#### MIMIC-IV
+
+MIMIC-IV is a large, freely-available database comprising de-identified health-related data associated with over 60,000 hospital admissions for adult and pediatric patients. 
+
+You need to apply for access [here](https://mimic.mit.edu/docs/gettingstarted/).
+
 
 #### TCGA
 
