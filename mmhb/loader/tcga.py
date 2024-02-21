@@ -94,10 +94,6 @@ class TCGADataset(MMDataset):
 
         if self.concat:
             tensors = torch.cat([torch.flatten(t) for t in tensors], dim=0)
-            # if self.expand:
-            #     # expand again for healnet
-            #     tensors = tensors.unsqueeze(0)
-            # # return as list (even if concatenated)
             tensors = [tensors]
         assert isinstance(tensors, list), "tensors must be a list"
 
