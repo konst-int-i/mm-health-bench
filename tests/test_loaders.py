@@ -37,7 +37,7 @@ def test_sample_dataset(config):
 
 def test_tcga(config):
     data = TCGADataset(
-        **config.to_dict(), dataset="brca", modalities=["omic", "slides"]
+        dataset="brca", modalities=["omic", "slides"], **config.to_dict()
     )
     assert len(data) == 1019
     tensors = data[0]

@@ -27,6 +27,7 @@ class TCGADataset(MMDataset):
         dataset: str,
         modalities: List = ["omic", "slides"],
         expand: bool = False,
+        encoder: str = "kather",
         level: int = 2,
         filter_overlap: bool = True,
         patch_wsi: bool = True,
@@ -42,6 +43,7 @@ class TCGADataset(MMDataset):
         self.modalities = modalities
         self.filter_overlap = filter_overlap
         self.patch_wsi = patch_wsi
+        self.encoder = encoder
         self.concat = concat  # whether to flatten tensor for early fusion
 
         self._check_args()
@@ -63,6 +65,11 @@ class TCGADataset(MMDataset):
         assert all(
             source in valid_sources for source in self.modalities
         ), "Invalid source specified"
+
+        valid_encoders = ["kather", "imagenet"]
+        assert (
+            self.encoder in valid_encoders
+        ), f"Invalid encoder, must be one of {valid_encoders}"
 
         valid_datasets = [
             "blca",
@@ -136,7 +143,11 @@ class TCGADataset(MMDataset):
         Returns:
             torch.Tensor: Patch features
         """
-        load_path = self.prep_path.joinpath(f"patch_features/{slide_id}.pt")
+        if self.encoder == "kather":
+            load_path = self.prep_path.joinpath(f"patch_features_kather/{slide_id}.pt")
+        else:
+            load_path = self.prep_path.joinpath(f"patch_features/{slide_id}.pt")
+
         with open(load_path, "rb") as file:
             patch_features = torch.load(
                 file, weights_only=True, map_location=torch.device("cpu")
@@ -185,6 +196,7 @@ class TCGASurvivalDataset(TCGADataset):
         expand: bool = False,
         modalities: List = ["omic", "slides"],
         level: int = 2,
+        encoder: str = "kather",
         filter_overlap: bool = True,
         patch_wsi: bool = True,
         n_bins: int = 4,
@@ -195,9 +207,10 @@ class TCGASurvivalDataset(TCGADataset):
             dataset,
             modalities,
             expand,
-            level,
-            filter_overlap,
-            patch_wsi,
+            encoder,
+            level=level,
+            filter_overlap=filter_overlap,
+            patch_wsi=patch_wsi,
             **kwargs,
         )
         self.n_bins = n_bins
