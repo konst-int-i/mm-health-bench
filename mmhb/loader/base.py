@@ -19,6 +19,7 @@ class MMDataset(Dataset):
         data_path: Union[str, Path],
         expand: bool = True,
         modalities: List[str] = None,
+        **kwargs,
     ):
         """
         Base class for multimodal datasets. Note that each child class should implement the following methods:
