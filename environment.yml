@@ -24,4 +24,5 @@ dependencies:
       - invoke
       - pre-commit
       - gdown
+      - tables
       - transformers
