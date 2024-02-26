@@ -1,6 +1,4 @@
-import h5py
 import pandas as pd
-import threading
 import tables
 import einops
 from openslide import OpenSlide
@@ -11,7 +9,7 @@ from mmhb.loader import MMDataset
 from mmhb.utils import setup_logging, RepeatTransform, RearrangeTransform, Config
 import torch
 import os
-from typing import Union, List, Tuple
+from typing import Union, List, Tuple, Optional
 from pathlib import Path
 from tiatoolbox.tools import stainnorm
 from tiatoolbox.models.engine.patch_predictor import PatchPredictor
@@ -113,26 +111,86 @@ class TCGADataset(MMDataset):
     def num_modalities(self) -> int:
         return len(self.modalities)
 
-    def load_omic(self) -> pd.DataFrame:
-        load_path = self.data_path.joinpath(
-            f"tcga/omic/tcga_{self.dataset}_all_clean.csv.zip"
-        )
-        df = pd.read_csv(
-            load_path, compression="zip", header=0, index_col=0, low_memory=False
-        )
+    def load_omic(self, target_site: Optional[str] = None) -> pd.DataFrame:
+        """
 
-        # handle missing
-        num_nans = df.isna().sum().sum()
-        nan_counts = df.isna().sum()[df.isna().sum() > 0]
-        logger.debug(f"Filled {num_nans} missing values with mean")
-        if num_nans > 0:
-            df = df.fillna(df.mean(numeric_only=True))
-            logger.debug(f"Missing values per feature: \n {nan_counts}")
+        Args:
+            target_site (Optional, str): optional argument that should only be used in the domain adaptation experiments.
+                This constructs a dataframe from the target site and populates the data that is available. For example,
+                if ``self.site = 'blca'`` and ``target_site='kirp'``, the dataframe will have the columns of the `kirp'
+                site, populated with the available features from 'blca'
+
+        Returns:
+
+        """
+        if target_site is not None:
+            df = self.load_conditional_omic(target_site)
+        else:
+            load_path = self.data_path.joinpath(
+                f"tcga/omic/tcga_{self.dataset}_all_clean.csv.zip"
+            )
+            df = pd.read_csv(
+                load_path, compression="zip", header=0, index_col=0, low_memory=False
+            )
+            # handle missing
+            num_nans = df.isna().sum().sum()
+            nan_counts = df.isna().sum()[df.isna().sum() > 0]
+            logger.debug(f"Filled {num_nans} missing values with mean")
+            if num_nans > 0:
+                df = df.fillna(df.mean(numeric_only=True))
+                logger.debug(f"Missing values per feature: \n {nan_counts}")
 
         if self.filter_overlap:
+            # filter only data where both modalities are available
             df = self._filter_overlap(df)
 
         return df
+
+    def load_conditional_omic(self, target_site) -> pd.DataFrame:
+        """
+        Loads omic data for the target site and populates the data that is available. For example, if ``self.site = 'blca'`` and ``target_site='kirp'``, the dataframe will have the columns of the `kirp' site, populated with the available features from 'blca'
+        Args:
+            target_site (str): Target site for domain adaptation
+
+        Returns:
+            pd.DataFrame:
+        """
+        source_path = self.data_path.joinpath(
+            f"tcga/omic/tcga_{self.dataset}_all_clean.csv.zip"
+        )
+        target_path = self.data_path.joinpath(
+            f"tcga/omic/tcga_{target_site}_all_clean.csv.zip"
+        )
+
+        df = pd.read_csv(
+            source_path, compression="zip", header=0, index_col=0, low_memory=False
+        )
+        dft = pd.read_csv(
+            target_path, compression="zip", header=0, index_col=0, low_memory=False
+        )
+        # get overlap
+
+        result_df = pd.DataFrame(columns=dft.columns)
+        match_cols = 0
+        # populate result_df with the overlapping columns
+        for col in dft.columns:
+            if col in df.columns:
+                result_df[col] = df[col]
+                match_cols += 1
+
+        print(
+            f"Matched {match_cols}/{len(dft.columns)} columns from {self.dataset} to {target_site}"
+        )
+        nan_cols = result_df.columns[result_df.isna().all()]
+        assert (
+            len(dft.columns) - len(nan_cols) == match_cols
+        ), "Mismatch in number of columns"
+
+        print(nan_cols)
+        # fill nan values - temporary(?)
+        result_df.fillna(result_df.mean(numeric_only=True), inplace=True)
+
+        return result_df
 
     def load_patches(self, slide_id: str) -> torch.Tensor:
         """
