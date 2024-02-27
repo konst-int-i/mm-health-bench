@@ -30,6 +30,7 @@ class TCGADataset(MMDataset):
         filter_overlap: bool = True,
         patch_wsi: bool = True,
         concat: bool = False,
+        conditional_target: str = None,
         **kwargs,
     ):
         super().__init__(data_path, expand, modalities, **kwargs)
@@ -46,7 +47,7 @@ class TCGADataset(MMDataset):
 
         self._check_args()
         # pre-fetch data
-        self.omic_df = self.load_omic()
+        self.omic_df = self.load_omic(target_site=conditional_target)
         self.slide_ids = self.omic_df["slide_id"].str.strip(".svs")
         self.omic_df = self.omic_df.drop(
             ["site", "oncotree_code", "case_id", "slide_id", "train"], axis=1
@@ -178,7 +179,7 @@ class TCGADataset(MMDataset):
                 result_df[col] = df[col]
                 match_cols += 1
 
-        print(
+        logger.info(
             f"Matched {match_cols}/{len(dft.columns)} columns from {self.dataset} to {target_site}"
         )
         nan_cols = result_df.columns[result_df.isna().all()]
@@ -186,9 +187,11 @@ class TCGADataset(MMDataset):
             len(dft.columns) - len(nan_cols) == match_cols
         ), "Mismatch in number of columns"
 
-        print(nan_cols)
+        logger.info(
+            f"Columns in {target_site} not available in {self.dataset}: {nan_cols}"
+        )
         # fill nan values - temporary(?)
-        result_df.fillna(result_df.mean(numeric_only=True), inplace=True)
+        result_df = result_df.fillna(0)
 
         return result_df
 
@@ -258,6 +261,7 @@ class TCGASurvivalDataset(TCGADataset):
         filter_overlap: bool = True,
         patch_wsi: bool = True,
         n_bins: int = 4,
+        conditional_target: str = None,
         **kwargs,
     ):
         super().__init__(
@@ -269,6 +273,7 @@ class TCGASurvivalDataset(TCGADataset):
             level=level,
             filter_overlap=filter_overlap,
             patch_wsi=patch_wsi,
+            conditional_target=conditional_target,
             **kwargs,
         )
         self.n_bins = n_bins

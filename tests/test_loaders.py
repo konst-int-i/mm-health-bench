@@ -45,9 +45,33 @@ def test_tcga(config):
     assert (data.num_modalities) == 2
 
 
+@pytest.mark.dev
+def test_tcga_conditional(config):
+    # test for checking the omic feature dimensions for domain adaptation setting
+
+    # load standard brca
+    brca = TCGASurvivalDataset(
+        dataset="brca", modalities=["omic", "slides"], **config.to_dict()
+    )
+    kirp = TCGASurvivalDataset(
+        dataset="kirp", modalities=["omic", "slides"], **config.to_dict()
+    )
+
+    conditional = TCGASurvivalDataset(
+        dataset="brca",
+        modalities=["omic", "slides"],
+        conditional_target="kirp",
+        **config.to_dict(),
+    )
+    assert len(conditional) == len(brca)
+    # must have same number of columns as
+    assert conditional.features.shape[1] == kirp.features.shape[1]
+    assert conditional.features.shape[0] == brca.features.shape[0]
+
+
 def test_tcga_survival(config):
     n_patches = 1081  # number of image patches in first sample (data[0])
-    patch_dim = 2048
+    patch_dim = 512  # kather patch dimension
     n_feats = 2914  # tabular features
 
     # TEST CASE - smoke test regular dims, expand=False
